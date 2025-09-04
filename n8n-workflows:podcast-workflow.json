@@ -1,0 +1,96 @@
+{
+  "name": "Podcast Generation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "none",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "podcast-webhook",
+      "name": "Podcast Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "podcast-generation-webhook"
+    },
+    {
+      "parameters": {
+        "operation": "generateContent",
+        "model": "gemini-2.5-flash",
+        "prompt": {
+          "value": "Generate a podcast audio based on these requirements:\n\nScript: {{ $json.script }}\n\nCharacters:\n{{ $json.characters.map(c => `${c.name}: ${c.description}`).join('\\n') }}\n\nBackground Music: {{ $json.musicStyle }}\nMusic Volume: {{ $json.musicVolume }}%\n\nCreate a cohesive podcast with distinct voices for each character and appropriate background music."
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxOutputTokens": 4096
+        }
+      },
+      "id": "gemini-podcast",
+      "name": "Gemini Podcast Generator",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "googleGeminiApi": "gemini-api-credentials"
+      }
+    },
+    {
+      "parameters": {
+        "function": "processPodcastResult",
+        "result": "={{ $json.node[\"Gemini Podcast Generator\"].json }}",
+        "parameters": "={{ $json }}"
+      },
+      "id": "process-result",
+      "name": "Process Result",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "respond-podcast",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Podcast Webhook": {
+      "main": [
+        [
+          {
+            "node": "Gemini Podcast Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Podcast Generator": {
+      "main": [
+        [
+          {
+            "node": "Process Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Result": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
