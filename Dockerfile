@@ -1,17 +1,21 @@
-FROM node:18-alpine
-
+FROM node:18
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-RUN npm install --production
+
+# Install dependencies
+RUN npm install
 
 # Copy application files
-COPY . .
+COPY backendIndex.js ./
+COPY backendpackage.json ./
 
 # Create upload directory
 RUN mkdir -p uploads
 
-EXPOSE 3001
+# Expose port
+EXPOSE 3841
 
-CMD ["node", "index.js"]
+# Start application
+CMD ["node", "backendIndex.js"]
